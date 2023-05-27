@@ -112,16 +112,16 @@ int enrollFingerprint(){ // returns p (status/error code)
       break;
     case FINGERPRINT_NOFINGER:
       Serial.println(".");
-      break;
+      return p;
     case FINGERPRINT_PACKETRECIEVEERR:
       Serial.println("Communication error");
-      break;
+      return p;
     case FINGERPRINT_IMAGEFAIL:
       Serial.println("Imaging error");
-      break;
+      return p;
     default:
-      Serial.println("Unknown error");
-      break;
+      Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
+      return p;
     }
   }
 
@@ -143,7 +143,7 @@ int enrollFingerprint(){ // returns p (status/error code)
       Serial.println("Could not find fingerprint features");
       return p;
     default:
-      Serial.println("Unknown error");
+      Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
       return p;
   }
 
@@ -164,16 +164,16 @@ int enrollFingerprint(){ // returns p (status/error code)
       break;
     case FINGERPRINT_NOFINGER:
       Serial.print(".");
-      break;
+      return p;
     case FINGERPRINT_PACKETRECIEVEERR:
       Serial.println("Communication error");
-      break;
+      return p;
     case FINGERPRINT_IMAGEFAIL:
       Serial.println("Imaging error");
-      break;
+      return p;
     default:
-      Serial.println("Unknown error");
-      break;
+      Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
+      return p;
     }
   }
 
@@ -195,7 +195,7 @@ int enrollFingerprint(){ // returns p (status/error code)
       Serial.println("Could not find fingerprint features");
       return p;
     default:
-      Serial.println("Unknown error");
+      Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
       return p;
   }
 
@@ -211,11 +211,11 @@ int enrollFingerprint(){ // returns p (status/error code)
     Serial.println("Fingerprints did not match");
     return p;
   } else {
-    Serial.println("Unknown error");
+    Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
     return p;
   }
 
-  Serial.print("ID "); Serial.println(id);
+  Serial.print("Storing model for #");  Serial.println(id);
   p = finger.storeModel(id);
   if (p == FINGERPRINT_OK) {
     Serial.println("Stored!");
@@ -229,7 +229,7 @@ int enrollFingerprint(){ // returns p (status/error code)
     Serial.println("Error writing to flash");
     return p;
   } else {
-    Serial.println("Unknown error");
+    Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
     return p;
   }
 
