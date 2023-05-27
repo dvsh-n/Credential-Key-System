@@ -99,7 +99,7 @@ int enrollFingerprint(){ // returns p (status/error code)
     Serial.println("ID not allowed, try again.");
     return -1;
   }
-  Serial.print("Enrolling ID #");
+  Serial.print("Enrolling fingerprint at ID #");
   Serial.println(id);
 
   int p = -1;
@@ -236,7 +236,35 @@ int enrollFingerprint(){ // returns p (status/error code)
   return true;
 }
 
+int deleteFingerprint(){
+  Serial.println("Ready to delete a fingerprint.");
+  Serial.println("Please type in the ID # (from 1 to 127) you want to delete...");
+  waitAndGetInput(1);
+  uint8_t id = numInput;
+  if ((id < 1) | (id > 127)) {
+    Serial.println("ID not allowed, try again.");
+    return -1;
+  }
+  Serial.print("Deleting fingerprint at ID #");
+  Serial.println(id);
 
+  int p = -1;
+
+  p = finger.deleteModel(id);
+
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Deleted!");
+  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
+    Serial.println("Communication error");
+  } else if (p == FINGERPRINT_BADLOCATION) {
+    Serial.println("Could not delete in that location");
+  } else if (p == FINGERPRINT_FLASHERR) {
+    Serial.println("Error writing to flash");
+  } else {
+    Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
+  }
+  return p;
+}
 
 // Setup
 void setup() {
@@ -317,8 +345,7 @@ void loop() {
         // changePassword();
       }
       else if (input == "delete"){
-        Serial.println("placeholder 3");
-        // deleteFingerprint();
+        deleteFingerprint();
       }
       else {
         Serial.println("Error 3");
