@@ -13,34 +13,29 @@
 2 -> Delete Fingerprint
 3 -> Reset current process
 */
-
 #include <Adafruit_Fingerprint.h>
 #include <HardwareSerial.h>
 
-// Variables and definitions
-uint8_t nextState = 0; 
-uint8_t taskIdx = 0;
+// variables
+Adafruit_Fingerprint finger = Adafruit_Fingerprint(&Serial2);
+
+uint8_t nextState = 0;
 uint8_t verified = 0;
 
 #define numCodes  5
 String input;
-const String password = "espTest";
+uint8_t numInput;
+String password = "espTest";
 const String codes[numCodes] = {"login", "logout", "chgPass", "enroll", "delete"}; // Task indexes are important, they are important for switch.
 
-
-Adafruit_Fingerprint finger = Adafruit_Fingerprint(&Serial2);
-
 // Functions
-uint8_t getTaskIdx() {
-  uint8_t taskFound = 0;
+uint8_t validateTask() {
   for (int i = 0; i < numCodes; i++){
     if (input == codes[i]) {
-      taskIdx = i;
-      taskFound = 1;
-      break;
+      return 1;
     }
   }
-  return taskFound;
+  return 0;
 }
 
 void printTasks() {
@@ -50,10 +45,15 @@ void printTasks() {
   Serial.println(codes[numCodes]);
 }
 
-void waitAndGetInput() {
+void waitAndGetInput(uint8_t number) {
   while (1) {
     if (Serial.available()){
+      if (!number){
       input = Serial.readString();
+      }
+      else{
+      numInput = Serial.parseInt();
+      }
       break;
     }
   }
@@ -83,13 +83,160 @@ void setupFingerprintSensor() {
   finger.getTemplateCount();
 
   if (finger.templateCount == 0) {
-    Serial.print("Sensor doesn't contain any fingerprint data. Please run the 'enroll' example.");
+    Serial.print("Sensor doesn't contain any fingerprint data. Please run the enroll task");
   }
   else {
-    Serial.println("Waiting for valid finger...");
-      Serial.print("Sensor contains "); Serial.print(finger.templateCount); Serial.println(" templates");
+    Serial.print("Sensor contains "); Serial.print(finger.templateCount); Serial.println(" templates");
   }
 }
+
+int enrollFingerprint(){ // returns p (status/error code)
+  Serial.println("Ready to enroll a fingerprint.");
+  Serial.print("Please type in the ID # (from ");Serial.print(finger.templateCount+1);Serial.println(" to 127) you want to save this finger as...");
+  waitAndGetInput(1);
+  uint8_t id = numInput;
+  if ((id < finger.templateCount+1) | (id > 127)) {
+    Serial.println("ID not allowed, try again.");
+    return -1;
+  }
+  Serial.print("Enrolling ID #");
+  Serial.println(id);
+
+  int p = -1;
+  Serial.print("Waiting for valid finger to enroll as #"); Serial.println(id);
+  while (p != FINGERPRINT_OK) {
+    p = finger.getImage();
+    switch (p) {
+    case FINGERPRINT_OK:
+      Serial.println("Image taken");
+      break;
+    case FINGERPRINT_NOFINGER:
+      Serial.println(".");
+      break;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      break;
+    case FINGERPRINT_IMAGEFAIL:
+      Serial.println("Imaging error");
+      break;
+    default:
+      Serial.println("Unknown error");
+      break;
+    }
+  }
+
+  p = finger.image2Tz(1);
+  switch (p) {
+    case FINGERPRINT_OK:
+      Serial.println("Image converted");
+      break;
+    case FINGERPRINT_IMAGEMESS:
+      Serial.println("Image too messy");
+      return p;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      return p;
+    case FINGERPRINT_FEATUREFAIL:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    case FINGERPRINT_INVALIDIMAGE:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    default:
+      Serial.println("Unknown error");
+      return p;
+  }
+
+  Serial.println("Remove finger");
+  delay(2000);
+  p = 0;
+  while (p != FINGERPRINT_NOFINGER) {
+    p = finger.getImage();
+  }
+  Serial.print("ID "); Serial.println(id);
+  p = -1;
+  Serial.println("Place same finger again");
+  while (p != FINGERPRINT_OK) {
+    p = finger.getImage();
+    switch (p) {
+    case FINGERPRINT_OK:
+      Serial.println("Image taken");
+      break;
+    case FINGERPRINT_NOFINGER:
+      Serial.print(".");
+      break;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      break;
+    case FINGERPRINT_IMAGEFAIL:
+      Serial.println("Imaging error");
+      break;
+    default:
+      Serial.println("Unknown error");
+      break;
+    }
+  }
+
+  p = finger.image2Tz(2);
+  switch (p) {
+    case FINGERPRINT_OK:
+      Serial.println("Image converted");
+      break;
+    case FINGERPRINT_IMAGEMESS:
+      Serial.println("Image too messy");
+      return p;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      return p;
+    case FINGERPRINT_FEATUREFAIL:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    case FINGERPRINT_INVALIDIMAGE:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    default:
+      Serial.println("Unknown error");
+      return p;
+  }
+
+  Serial.print("Creating model for #");  Serial.println(id);
+
+  p = finger.createModel();
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Prints matched!");
+  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
+    Serial.println("Communication error");
+    return p;
+  } else if (p == FINGERPRINT_ENROLLMISMATCH) {
+    Serial.println("Fingerprints did not match");
+    return p;
+  } else {
+    Serial.println("Unknown error");
+    return p;
+  }
+
+  Serial.print("ID "); Serial.println(id);
+  p = finger.storeModel(id);
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Stored!");
+  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
+    Serial.println("Communication error");
+    return p;
+  } else if (p == FINGERPRINT_BADLOCATION) {
+    Serial.println("Could not store in that location");
+    return p;
+  } else if (p == FINGERPRINT_FLASHERR) {
+    Serial.println("Error writing to flash");
+    return p;
+  } else {
+    Serial.println("Unknown error");
+    return p;
+  }
+
+  return true;
+}
+
+
 
 // Setup
 void setup() {
@@ -109,7 +256,7 @@ void loop() {
       Serial.print("Enter Task ");
       Serial.print("valid Tasks are: ");
       printTasks();
-      waitAndGetInput();
+      waitAndGetInput(0);
       if (input == "login") {
         nextState = 1; // verification
       }
@@ -126,7 +273,7 @@ void loop() {
     case 1:
       if (!verified){
         Serial.println("Enter Password or type exit:");
-        waitAndGetInput();
+        waitAndGetInput(0);
         if (input == password) {
           verified = 1;
           Serial.println("Login Succesfull");
@@ -148,7 +295,7 @@ void loop() {
 
     case 2:
       if (verified) {
-        if (getTaskIdx()) { // changes taskIdx and tells if task was found
+        if (validateTask()) { // returns 1 if task is found
           nextState = 3; // execute tasks
         }
         else {
@@ -163,8 +310,7 @@ void loop() {
 
     case 3:
       if (input == "enroll"){
-        Serial.println("placeholder 3");
-        // enrollFingerprint();
+        enrollFingerprint();
       }
       else if (input == "chgPass"){
         Serial.println("placeholder 3");
@@ -177,18 +323,18 @@ void loop() {
       else {
         Serial.println("Error 3");
       }
-      nextState = 4;
-      break;
-
-    case 4:
-      Serial.println("new task or exit?");
-      waitAndGetInput();
-      if (input == "exit") {
-        Serial.println("placeholder 4");
-        // resetVariables();
-      }
       nextState = 0;
       break;
+
+    // case 4:
+    //   Serial.println("new task or exit?");
+    //   waitAndGetInput();
+    //   if (input == "exit") {
+    //     Serial.println("placeholder 4");
+    //     // resetVariables();
+    //   }
+    //   nextState = 0;
+    //   break;
 
     default: 
       Serial.println("Default State: something went wrong");
