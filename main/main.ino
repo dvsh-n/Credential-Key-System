@@ -42,7 +42,7 @@ void printTasks() {
   for (int i = 0; i < numCodes-1; i++) {
     Serial.print(codes[i] + ", ");
   }
-  Serial.println(codes[numCodes]);
+  Serial.println(codes[numCodes-1]);
 }
 
 void waitAndGetInput(uint8_t number) {
