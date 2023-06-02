@@ -28,6 +28,8 @@ uint8_t numInput;
 String password = "espTest";
 const String codes[numCodes] = {"login", "logout", "chgPass", "enroll", "delete"}; // Task indexes are important, they are important for switch.
 
+#define numIDs 10
+
 // Functions
 uint8_t validateTask() {
   for (int i = 0; i < numCodes; i++){
@@ -42,7 +44,7 @@ void printTasks() {
   for (int i = 0; i < numCodes-1; i++) {
     Serial.print(codes[i] + ", ");
   }
-  Serial.println(codes[numCodes]);
+  Serial.println(codes[numCodes-1]);
 }
 
 void waitAndGetInput(uint8_t number) {
