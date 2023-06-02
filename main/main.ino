@@ -85,7 +85,7 @@ void setupFingerprintSensor() {
   finger.getTemplateCount();
 
   if (finger.templateCount == 0) {
-    Serial.println("Sensor doesn't contain any fingerprint data. Please run the enroll task");
+    Serial.print("Sensor doesn't contain any fingerprint data. Please run the enroll task");
   }
   else {
     Serial.print("Sensor contains "); Serial.print(finger.templateCount); Serial.println(" templates");
@@ -94,7 +94,7 @@ void setupFingerprintSensor() {
 
 int enrollFingerprint(){ // returns p (status/error code)
   Serial.println("Ready to enroll a fingerprint.");
-  Serial.print("Please type in the ID # (from 1 to 127) you want to save this finger as...");
+  Serial.print("Please type in the ID # (from ");Serial.print(finger.templateCount+1);Serial.println(" to 127) you want to save this finger as...");
   waitAndGetInput(1);
   uint8_t id = numInput;
   if ((id < finger.templateCount+1) | (id > 127)) {
@@ -113,17 +113,17 @@ int enrollFingerprint(){ // returns p (status/error code)
       Serial.println("Image taken");
       break;
     case FINGERPRINT_NOFINGER:
-      Serial.print(". ");
-      break;
+      Serial.println(".");
+      return p;
     case FINGERPRINT_PACKETRECIEVEERR:
       Serial.println("Communication error");
-      break;
+      return p;
     case FINGERPRINT_IMAGEFAIL:
       Serial.println("Imaging error");
-      break;
+      return p;
     default:
       Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
-      break;
+      return p;
     }
   }
 
@@ -166,16 +166,16 @@ int enrollFingerprint(){ // returns p (status/error code)
       break;
     case FINGERPRINT_NOFINGER:
       Serial.print(".");
-      break;
+      return p;
     case FINGERPRINT_PACKETRECIEVEERR:
       Serial.println("Communication error");
-      break;
+      return p;
     case FINGERPRINT_IMAGEFAIL:
       Serial.println("Imaging error");
-      break;
+      return p;
     default:
       Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
-      break;
+      return p;
     }
   }
 
@@ -335,7 +335,6 @@ void loop() {
       }
       else {
         Serial.println("You are not verified, login first");
-        nextState = 0;
       }
       break;
 
