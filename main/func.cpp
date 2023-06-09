@@ -54,7 +54,7 @@ void setupFingerprintSensor(Adafruit_Fingerprint finger) {
   finger.getTemplateCount();
 
   if (finger.templateCount == 0) {
-    Serial.print("Sensor doesn't contain any fingerprint data. Please run the enroll task");
+    Serial.println("Sensor doesn't contain any fingerprint data. Please run the enroll task");
   }
   else {
     Serial.print("Sensor contains "); Serial.print(finger.templateCount); Serial.println(" templates");
@@ -84,7 +84,7 @@ int enrollFingerprint(Adafruit_Fingerprint finger){ // returns p (status/error c
       break;
     case FINGERPRINT_NOFINGER:
       Serial.println(".");
-      return p;
+      break;
     case FINGERPRINT_PACKETRECIEVEERR:
       Serial.println("Communication error");
       return p;
@@ -135,8 +135,8 @@ int enrollFingerprint(Adafruit_Fingerprint finger){ // returns p (status/error c
       Serial.println("Image taken");
       break;
     case FINGERPRINT_NOFINGER:
-      Serial.print(".");
-      return p;
+      Serial.println(".");
+      break;
     case FINGERPRINT_PACKETRECIEVEERR:
       Serial.println("Communication error");
       return p;

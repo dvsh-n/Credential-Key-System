@@ -95,6 +95,7 @@ void loop() {
       }
       else {
         Serial.println("You are not verified, login first");
+        nextState = 0;
       }
       break;
 
@@ -114,16 +115,6 @@ void loop() {
       }
       nextState = 0;
       break;
-
-    // case 4:
-    //   Serial.println("new task or exit?");
-    //   waitAndGetInput();
-    //   if (input == "exit") {
-    //     Serial.println("placeholder 4");
-    //     // resetVariables();
-    //   }
-    //   nextState = 0;
-    //   break;
 
     default: 
       Serial.println("Default State: something went wrong");
