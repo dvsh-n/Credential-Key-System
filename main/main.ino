@@ -28,6 +28,10 @@ uint8_t numInput;
 String password = "espTest";
 String codes[5] = {"login", "logout", "chgPass", "enroll", "delete"}; // Task indexes are important, they are important for switch.
 
+#define numUsers 10
+uint8_t userExists[numUsers];
+user users[numUsers];
+
 // Setup
 void setup() {
   Serial.begin(115200);
@@ -101,7 +105,7 @@ void loop() {
 
     case 3:
       if (input == "enroll"){
-        enrollFingerprint(finger);
+        enrollUser(users, userExists, finger);
       }
       else if (input == "chgPass"){
         Serial.println("placeholder 3");

@@ -1,5 +1,67 @@
 #include "func.h"
 
+void enrollUser(user users[], uint8_t userExists[], Adafruit_Fingerprint finger) {
+  String input;
+  uint8_t numInput;
+
+  uint8_t numUsers = sizeof(userExists)/sizeof(userExists[0]);
+  Serial.print("Select user ID > 0 and < "); Serial.print(String(numUsers)); Serial.println("");
+
+  Serial.print("Used IDs: ");
+  for (uint8_t i = 1; i < numUsers; i++) {
+    if (userExists[i] == 1) Serial.print(i);
+    Serial.print(" ");
+  }
+  Serial.print("\n");
+
+  uint8_t ID;
+  while(1){
+    waitAndGetInput(1, &input, &numInput);
+    if (userExists[numInput] | (numInput <= 0) | (numInput >= numUsers)) Serial.println("Invalid ID, try another ID");
+    else {
+      Serial.println("ID valid");
+      ID = numInput;
+      break;
+    }
+  }
+  Serial.println("Enter Alias");
+  waitAndGetInput(0, &input, &numInput);
+  users[ID].alias = input;
+
+  String temp;
+  while(1){
+    Serial.println("Enter password");
+    waitAndGetInput(0, &input, &numInput);
+    temp = input;
+    Serial.println("Enter password again");
+    waitAndGetInput(0, &input, &numInput);
+    if (temp == input){
+      Serial.println("Password registered");
+      break;
+    }
+    else Serial.println("Passwords dont match, try again");
+  }
+  users[ID].password = input;
+
+  int p;
+  while(1) {
+    p = enrollFingerprint(finger, ID);
+    if (p != FINGERPRINT_OK) {
+      Serial.println("Error, retry or exit?");
+      waitAndGetInput(0, &input, &ID);
+      if (input == "exit"){
+        users[ID].alias = "Null";
+        users[ID].password = "Null";
+        break;
+      }
+    }
+    else {
+      Serial.println("Fingerprint enrolled!");
+      break;
+    }
+  }  
+}
+
 uint8_t validateTask(String input, int numCodes, String codes[]) {
   for (int i = 0; i < numCodes; i++){
     if (input == codes[i]) {
@@ -61,18 +123,7 @@ void setupFingerprintSensor(Adafruit_Fingerprint finger) {
   }
 }
 
-int enrollFingerprint(Adafruit_Fingerprint finger){ // returns p (status/error code)
-  uint8_t id;
-  String unused;
-  Serial.println("Ready to enroll a fingerprint.");
-  Serial.print("Please type in the ID # (from ");Serial.print(finger.templateCount+1);Serial.println(" to 127) you want to save this finger as...");
-  waitAndGetInput(1, &unused, &id);
-  if ((id < finger.templateCount+1) | (id > 127)) {
-    Serial.println("ID not allowed, try again.");
-    return -1;
-  }
-  Serial.print("Enrolling fingerprint at ID #");
-  Serial.println(id);
+int enrollFingerprint(Adafruit_Fingerprint finger, uint8_t id){ // returns p (status/error code)
 
   int p = -1;
   Serial.print("Waiting for valid finger to enroll as #"); Serial.println(id);
@@ -87,13 +138,13 @@ int enrollFingerprint(Adafruit_Fingerprint finger){ // returns p (status/error c
       break;
     case FINGERPRINT_PACKETRECIEVEERR:
       Serial.println("Communication error");
-      return p;
+      break;
     case FINGERPRINT_IMAGEFAIL:
       Serial.println("Imaging error");
-      return p;
+      break;
     default:
       Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
-      return p;
+      break;
     }
   }
 
@@ -104,19 +155,19 @@ int enrollFingerprint(Adafruit_Fingerprint finger){ // returns p (status/error c
       break;
     case FINGERPRINT_IMAGEMESS:
       Serial.println("Image too messy");
-      return p;
+      break;
     case FINGERPRINT_PACKETRECIEVEERR:
       Serial.println("Communication error");
-      return p;
+      break;
     case FINGERPRINT_FEATUREFAIL:
       Serial.println("Could not find fingerprint features");
-      return p;
+      break;
     case FINGERPRINT_INVALIDIMAGE:
       Serial.println("Could not find fingerprint features");
-      return p;
+      break;
     default:
       Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
-      return p;
+      break;
   }
 
   Serial.println("Remove finger");
@@ -139,13 +190,13 @@ int enrollFingerprint(Adafruit_Fingerprint finger){ // returns p (status/error c
       break;
     case FINGERPRINT_PACKETRECIEVEERR:
       Serial.println("Communication error");
-      return p;
+      break;
     case FINGERPRINT_IMAGEFAIL:
       Serial.println("Imaging error");
-      return p;
+      break;
     default:
       Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
-      return p;
+      break;
     }
   }
 
@@ -156,56 +207,59 @@ int enrollFingerprint(Adafruit_Fingerprint finger){ // returns p (status/error c
       break;
     case FINGERPRINT_IMAGEMESS:
       Serial.println("Image too messy");
-      return p;
+      break;
     case FINGERPRINT_PACKETRECIEVEERR:
       Serial.println("Communication error");
-      return p;
+      break;
     case FINGERPRINT_FEATUREFAIL:
       Serial.println("Could not find fingerprint features");
-      return p;
+      break;
     case FINGERPRINT_INVALIDIMAGE:
       Serial.println("Could not find fingerprint features");
-      return p;
+      break;
     default:
       Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
-      return p;
+      break;
   }
 
   Serial.print("Creating model for #");  Serial.println(id);
 
   p = finger.createModel();
-  if (p == FINGERPRINT_OK) {
-    Serial.println("Prints matched!");
-  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
-    Serial.println("Communication error");
-    return p;
-  } else if (p == FINGERPRINT_ENROLLMISMATCH) {
-    Serial.println("Fingerprints did not match");
-    return p;
-  } else {
-    Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
-    return p;
+  switch(p){
+    case FINGERPRINT_OK:
+      Serial.println("Prints matched!");
+      break;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      break;
+    case FINGERPRINT_ENROLLMISMATCH:
+      Serial.println("Fingerprints did not match");
+      break;
+    default:
+      Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
+      break;
   }
 
   Serial.print("Storing model for #");  Serial.println(id);
   p = finger.storeModel(id);
-  if (p == FINGERPRINT_OK) {
-    Serial.println("Stored!");
-  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
-    Serial.println("Communication error");
-    return p;
-  } else if (p == FINGERPRINT_BADLOCATION) {
-    Serial.println("Could not store in that location");
-    return p;
-  } else if (p == FINGERPRINT_FLASHERR) {
-    Serial.println("Error writing to flash");
-    return p;
-  } else {
-    Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
-    return p;
+  switch(p){
+    case FINGERPRINT_OK:
+      Serial.println("Stored!");
+      break;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      break;
+    case FINGERPRINT_BADLOCATION:
+      Serial.println("Could not store in that location");
+      break;
+    case FINGERPRINT_FLASHERR:
+      Serial.println("Error writing to flash");
+      break;
+    default:
+      Serial.print("Unknown error: 0x"); Serial.println(p, HEX);
+      break;
   }
-
-  return true;
+  return p;
 }
 
 int deleteFingerprint(Adafruit_Fingerprint finger){
