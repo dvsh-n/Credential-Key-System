@@ -1,15 +1,15 @@
 #include "func.h"
 
-void enrollUser(user users[], uint8_t userExists[], Adafruit_Fingerprint finger) {
+void deleteUser(user users[], Adafruit_Fingerprint finger) {
   String input;
   uint8_t numInput;
 
-  uint8_t numUsers = sizeof(userExists)/sizeof(userExists[0]);
+  uint8_t numUsers = sizeof(users)/sizeof(users[0]);
   Serial.print("Select user ID > 0 and < "); Serial.print(String(numUsers)); Serial.println("");
 
   Serial.print("Used IDs: ");
   for (uint8_t i = 1; i < numUsers; i++) {
-    if (userExists[i] == 1) Serial.print(i);
+    if (users[i].userExists) Serial.print(i);
     Serial.print(" ");
   }
   Serial.print("\n");
@@ -17,13 +17,65 @@ void enrollUser(user users[], uint8_t userExists[], Adafruit_Fingerprint finger)
   uint8_t ID;
   while(1){
     waitAndGetInput(1, &input, &numInput);
-    if (userExists[numInput] | (numInput <= 0) | (numInput >= numUsers)) Serial.println("Invalid ID, try another ID");
+    if (!(users[numInput].userExists)) Serial.println("Invalid ID, try another ID");
     else {
       Serial.println("ID valid");
       ID = numInput;
       break;
     }
   }
+
+  String pass;
+  while(1){
+    Serial.println("Enter password");
+    waitAndGetInput(0, &input, &numInput);
+    pass = input;
+    if (pass == users[ID].password){
+      users[ID].alias = "Null";
+      users[ID].password = "Null";
+      users[ID].userExists = 0;
+      Serial.println("User Deleted");
+      break;
+    }
+    else if (pass == "exit") break;
+    else Serial.println("Passwords dont match, try again or type exit");
+  }
+}
+
+void initializeUsers(user users[]) {
+  uint8_t numUsers = sizeof(users)/sizeof(users[0]);
+  for (uint8_t i = 1; i < numUsers; i++) {
+    users[i].alias = "Null";
+    users[i].password = "Null";
+    users[i].userExists = 0;
+  }
+}
+
+void enrollUser(user users[], Adafruit_Fingerprint finger) {
+  String input;
+  uint8_t numInput;
+
+  uint8_t numUsers = sizeof(users)/sizeof(users[0]);
+  Serial.print("Select user ID > 0 and < "); Serial.print(String(numUsers)); Serial.println("");
+
+  Serial.print("Used IDs: ");
+  for (uint8_t i = 1; i < numUsers; i++) {
+    if (users[i].userExists) Serial.print(i);
+    Serial.print(" ");
+  }
+  Serial.print("\n");
+
+  uint8_t ID;
+  while(1){
+    waitAndGetInput(1, &input, &numInput);
+    if (users[numInput].userExists | (numInput <= 0) | (numInput >= numUsers)) Serial.println("Invalid ID, try another ID");
+    else {
+      Serial.println("ID valid");
+      ID = numInput;
+      break;
+    }
+  }
+
   Serial.println("Enter Alias");
   waitAndGetInput(0, &input, &numInput);
   users[ID].alias = input;
@@ -52,14 +104,18 @@ void enrollUser(user users[], uint8_t userExists[], Adafruit_Fingerprint finger)
       if (input == "exit"){
         users[ID].alias = "Null";
         users[ID].password = "Null";
+        users[ID].userExists = 0;
         break;
       }
     }
     else {
-      Serial.println("Fingerprint enrolled!");
+      Serial.println("Fingerprint enrolled");
       break;
     }
-  }  
+  }
+
+  Serial.println("User enrolled");
+  users[ID].userExists = 1;  
 }
 
 uint8_t validateTask(String input, int numCodes, String codes[]) {
