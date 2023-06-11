@@ -1,5 +1,9 @@
 #include "func.h"
 
+void validateFingerAndPass(user users, uint8_t ID) {
+  
+}
+
 void discardUser(user users[], uint8_t ID) {
   users[ID].alias = "Null";
   users[ID].password = "Null";
@@ -15,8 +19,7 @@ void deleteUser(user users[], Adafruit_Fingerprint finger) {
 
   Serial.print("Used IDs: ");
   for (uint8_t i = 1; i < numUsers; i++) {
-    if (users[i].userExists) Serial.print(i);
-    Serial.print(" ");
+    if (users[i].userExists) Serial.print(i); Serial.print(" ");
   }
   Serial.print("\n");
 
@@ -35,7 +38,8 @@ void deleteUser(user users[], Adafruit_Fingerprint finger) {
   String pass;
   while(1){
     Serial.println("Enter password");
-    waitAndGetInput(0, &input, &numInput);
+    waitAndGetInput(0, &input, &numInput, &exit);
+    if (exit) return;
     pass = input;
     if (pass == users[ID].password){
       deleteFingerprint(finger, ID);
@@ -57,7 +61,7 @@ void initializeUsers(user users[]) {
 
 void enrollUser(user users[], Adafruit_Fingerprint finger) {
   String input;
-  uint8_t numInput;
+  uint8_t numInput, exit;
 
   uint8_t numUsers = sizeof(users)/sizeof(users[0]);
   Serial.print("Select user ID > 0 and < "); Serial.print(String(numUsers)); Serial.println("");
@@ -71,7 +75,8 @@ void enrollUser(user users[], Adafruit_Fingerprint finger) {
 
   uint8_t ID;
   while(1){
-    waitAndGetInput(1, &input, &numInput);
+    waitAndGetInput(1, &input, &numInput, &exit);
+    if (exit) return;
     if (users[numInput].userExists | (numInput <= 0) | (numInput >= numUsers)) Serial.println("Invalid ID, try another ID");
     else {
       Serial.println("ID valid");
@@ -81,16 +86,25 @@ void enrollUser(user users[], Adafruit_Fingerprint finger) {
   }
 
   Serial.println("Enter Alias");
-  waitAndGetInput(0, &input, &numInput);
+  waitAndGetInput(0, &input, &numInput, &exit);
+  if (exit) return;
   users[ID].alias = input;
 
   String temp;
   while(1){
     Serial.println("Enter password");
     waitAndGetInput(0, &input, &numInput);
+    if (exit) {
+      discardUser(users, ID);
+      return;
+    }
     temp = input;
     Serial.println("Enter password again");
     waitAndGetInput(0, &input, &numInput);
+    if (exit) {
+      discardUser(users, ID);
+      return;
+    }
     if (temp == input){
       Serial.println("Password registered");
       break;
@@ -104,10 +118,10 @@ void enrollUser(user users[], Adafruit_Fingerprint finger) {
     p = enrollFingerprint(finger, ID);
     if (p != FINGERPRINT_OK) {
       Serial.println("Error, retry or exit?");
-      waitAndGetInput(0, &input, &ID);
-      if (input == "exit"){
+      waitAndGetInput(0, &input, &numInput, &exit);
+      if (exit) {
         discardUser(users, ID);
-        break;
+        return;
       }
     }
     else {
