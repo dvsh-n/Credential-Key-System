@@ -13,7 +13,7 @@ void initializeUsers(user users[]);
 void enrollUser(user users[], Adafruit_Fingerprint finger);
 uint8_t validateTask(String input, int numCodes, String codes[]);
 void printTasks(String codes[], int numCodes);
-void waitAndGetInput(uint8_t number, String *input, uint8_t *numInput);
+void waitAndGetInput(uint8_t number, String *input, uint8_t *numInput, uint8_t *exit);
 void setupFingerprintSensor(Adafruit_Fingerprint finger);
 int enrollFingerprint(Adafruit_Fingerprint finger, uint8_t id);
 int deleteFingerprint(Adafruit_Fingerprint finger, uint8_t id);

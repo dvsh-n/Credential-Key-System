@@ -8,7 +8,7 @@ void discardUser(user users[], uint8_t ID) {
 
 void deleteUser(user users[], Adafruit_Fingerprint finger) {
   String input;
-  uint8_t numInput;
+  uint8_t numInput, exit;
 
   uint8_t numUsers = sizeof(users)/sizeof(users[0]);
   Serial.print("Select user ID > 0 and < "); Serial.print(String(numUsers)); Serial.println("");
@@ -22,7 +22,8 @@ void deleteUser(user users[], Adafruit_Fingerprint finger) {
 
   uint8_t ID;
   while(1){
-    waitAndGetInput(1, &input, &numInput);
+    waitAndGetInput(1, &input, &numInput, &exit);
+    if (exit) return;
     if (!(users[numInput].userExists)) Serial.println("Invalid ID, try another ID");
     else {
       Serial.println("ID valid");
@@ -134,14 +135,20 @@ void printTasks(String codes[], int numCodes) {
   }
 }
 
-void waitAndGetInput(uint8_t number, String *input, uint8_t *numInput) {
+void waitAndGetInput(uint8_t number, String *input, uint8_t *numInput, uint8_t *exit) {
+  if (!number) Serial.println("To Exit, type \"exit\"");
+  else Serial.println("To Exit, type 255");
   while (1) {
     if (Serial.available()){
       if (!number){
       *input = Serial.readString();
+      if (*input == "exit") exit = 1;
+      else exit = 0;
       }
       else{
       *numInput = Serial.parseInt();
+      if (*numInput == 255) exit = 1;
+      else exit = 0;
       }
       break;
     }
