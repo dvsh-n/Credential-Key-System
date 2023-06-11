@@ -1,5 +1,11 @@
 #include "func.h"
-//
+
+void discardUser(user users[], uint8_t ID) {
+  users[ID].alias = "Null";
+  users[ID].password = "Null";
+  users[ID].userExists = 0;
+}
+
 void deleteUser(user users[], Adafruit_Fingerprint finger) {
   String input;
   uint8_t numInput;
@@ -31,9 +37,8 @@ void deleteUser(user users[], Adafruit_Fingerprint finger) {
     waitAndGetInput(0, &input, &numInput);
     pass = input;
     if (pass == users[ID].password){
-      users[ID].alias = "Null";
-      users[ID].password = "Null";
-      users[ID].userExists = 0;
+      deleteFingerprint(finger, ID);
+      discardUser(users, ID);
       Serial.println("User Deleted");
       break;
     }
@@ -45,9 +50,7 @@ void deleteUser(user users[], Adafruit_Fingerprint finger) {
 void initializeUsers(user users[]) {
   uint8_t numUsers = sizeof(users)/sizeof(users[0]);
   for (uint8_t i = 1; i < numUsers; i++) {
-    users[i].alias = "Null";
-    users[i].password = "Null";
-    users[i].userExists = 0;
+    discardUser(users, i);
   }
 }
 
@@ -102,9 +105,7 @@ void enrollUser(user users[], Adafruit_Fingerprint finger) {
       Serial.println("Error, retry or exit?");
       waitAndGetInput(0, &input, &ID);
       if (input == "exit"){
-        users[ID].alias = "Null";
-        users[ID].password = "Null";
-        users[ID].userExists = 0;
+        discardUser(users, ID);
         break;
       }
     }
@@ -128,10 +129,9 @@ uint8_t validateTask(String input, int numCodes, String codes[]) {
 }
 
 void printTasks(String codes[], int numCodes) {
-  for (int i = 0; i < numCodes-1; i++) {
-    Serial.print(codes[i] + ", ");
+  for (int i = 0; i < numCodes; i++) {
+    Serial.print(codes[i] + " ");
   }
-  Serial.println(codes[numCodes-1]);
 }
 
 void waitAndGetInput(uint8_t number, String *input, uint8_t *numInput) {
@@ -318,18 +318,7 @@ int enrollFingerprint(Adafruit_Fingerprint finger, uint8_t id){ // returns p (st
   return p;
 }
 
-int deleteFingerprint(Adafruit_Fingerprint finger){
-  uint8_t id;
-  String unused;
-  Serial.println("Ready to delete a fingerprint.");
-  Serial.println("Please type in the ID # (from 1 to 127) you want to delete...");
-  waitAndGetInput(1, &unused, &id);
-  if ((id < 1) | (id > 127)) {
-    Serial.println("ID not allowed, try again.");
-    return -1;
-  }
-  Serial.print("Deleting fingerprint at ID #");
-  Serial.println(id);
+int deleteFingerprint(Adafruit_Fingerprint finger, uint8_t id){
 
   int p = -1;
 

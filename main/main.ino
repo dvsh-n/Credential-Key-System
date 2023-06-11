@@ -112,7 +112,7 @@ void loop() {
         // changePassword();
       }
       else if (input == "delete"){
-        deleteFingerprint(finger);
+        deleteUser(users, finger);
       }
       else {
         Serial.println("Error 3");
