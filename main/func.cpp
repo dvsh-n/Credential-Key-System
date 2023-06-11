@@ -1,5 +1,5 @@
 #include "func.h"
-
+//
 void deleteUser(user users[], Adafruit_Fingerprint finger) {
   String input;
   uint8_t numInput;
