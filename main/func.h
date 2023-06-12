@@ -7,7 +7,8 @@ typedef struct {
   uint8_t userExists;
 } user; // ID is equal to index
 
-void validateFingerAndPass(user users[], uint8_t ID, Adafruit_Fingerprint finger);
+int getFingerID(Adafruit_Fingerprint finger);
+void validateFingerAndPass(user users[], uint8_t ID, uint8_t *access, Adafruit_Fingerprint finger);
 void discardUser(user users[], uint8_t ID);
 void deleteUser(user users[], Adafruit_Fingerprint finger);
 void initializeUsers(user users[]);

@@ -24,7 +24,7 @@ uint8_t verified = 0;
 int numCodes = 5;
 
 String input;
-uint8_t numInput;
+uint8_t numInput, unused;
 String password = "espTest";
 String codes[5] = {"login", "logout", "chgPass", "enroll", "delete"}; // Task indexes are important, they are important for switch.
 
@@ -50,7 +50,7 @@ void loop() {
       Serial.print("Enter Task ");
       Serial.print("valid Tasks are: ");
       printTasks(codes, numCodes);
-      waitAndGetInput(0, &input, &numInput);
+      waitAndGetInput(0, &input, &numInput, &unused);
       if (input == "login") {
         nextState = 1; // verification
       }
@@ -67,7 +67,7 @@ void loop() {
     case 1:
       if (!verified){
         Serial.println("Enter Password or type exit:");
-        waitAndGetInput(0, &input, &numInput);
+        waitAndGetInput(0, &input, &numInput, &unused);
         if (input == password) {
           verified = 1;
           Serial.println("Login Succesfull");
@@ -84,6 +84,7 @@ void loop() {
       } 
       else{
         Serial.println("Already logged in");
+        nextState = 0;
       } 
       break;
 

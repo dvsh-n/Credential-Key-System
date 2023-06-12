@@ -1,7 +1,91 @@
 #include "func.h"
 
-void validateFingerAndPass(user users, uint8_t ID) {
-  
+int getFingerID(Adafruit_Fingerprint finger) {
+  int p = finger.getImage();
+  switch (p) {
+    case FINGERPRINT_OK:
+      Serial.println("Image taken");
+      break;
+    case FINGERPRINT_NOFINGER:
+      Serial.println("No finger detected");
+      return -1;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      return -1;
+    case FINGERPRINT_IMAGEFAIL:
+      Serial.println("Imaging error");
+      return -1;
+    default:
+      Serial.println("Unknown error");
+      return -1;
+  }
+
+  // OK success!
+
+  p = finger.image2Tz();
+  switch (p) {
+    case FINGERPRINT_OK:
+      Serial.println("Image converted");
+      break;
+    case FINGERPRINT_IMAGEMESS:
+      Serial.println("Image too messy");
+      return -1;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      return -1;
+    case FINGERPRINT_FEATUREFAIL:
+      Serial.println("Could not find fingerprint features");
+      return -1;
+    case FINGERPRINT_INVALIDIMAGE:
+      Serial.println("Could not find fingerprint features");
+      return -1;
+    default:
+      Serial.println("Unknown error");
+      return -1;
+  }
+
+  // OK converted!
+  p = finger.fingerSearch();
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Found a print match!");
+  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
+    Serial.println("Communication error");
+    return -1;
+  } else if (p == FINGERPRINT_NOTFOUND) {
+    Serial.println("Did not find a match");
+    return -1;
+  } else {
+    Serial.println("Unknown error");
+    return -1;
+  }
+
+  // found a match!
+  Serial.print("Found ID #"); Serial.print(finger.fingerID);
+  Serial.print(" with confidence of "); Serial.println(finger.confidence);
+
+  return finger.fingerID;
+}
+
+void validateFingerAndPass(user users[], uint8_t ID, uint8_t *access, Adafruit_Fingerprint finger) {
+  String input, pass;
+  uint8_t numInput, exit;
+  int result;
+
+  while (1) {
+    Serial.println("Enter password");
+    waitAndGetInput(0, &input, &numInput, &exit);
+    if (exit) return;
+    pass = input;
+    if (pass == users[ID].password){
+      result = getFingerID(finger);
+      if ((uint8_t)result == ID) {
+        *access = 1;
+        break;
+      } 
+      else *access = 0;
+    }
+    else Serial.println("Passwords dont match, try again");
+  }
 }
 
 void discardUser(user users[], uint8_t ID) {
@@ -13,6 +97,7 @@ void discardUser(user users[], uint8_t ID) {
 void deleteUser(user users[], Adafruit_Fingerprint finger) {
   String input;
   uint8_t numInput, exit;
+  uint8_t access = 0;
 
   uint8_t numUsers = sizeof(users)/sizeof(users[0]);
   Serial.print("Select user ID > 0 and < "); Serial.print(String(numUsers)); Serial.println("");
@@ -35,20 +120,15 @@ void deleteUser(user users[], Adafruit_Fingerprint finger) {
     }
   }
 
-  String pass;
-  while(1){
-    Serial.println("Enter password");
-    waitAndGetInput(0, &input, &numInput, &exit);
-    if (exit) return;
-    pass = input;
-    if (pass == users[ID].password){
-      deleteFingerprint(finger, ID);
-      discardUser(users, ID);
-      Serial.println("User Deleted");
-      break;
-    }
-    else if (pass == "exit") break;
-    else Serial.println("Passwords dont match, try again or type exit");
+  validateFingerAndPass(users, ID, &access, finger);
+  if (access) {
+    deleteFingerprint(finger, ID);
+    discardUser(users, ID);
+    Serial.println("User Deleted");
+  }
+  else {
+    Serial.println("Process failed");
+    return;
   }
 }
 
@@ -93,14 +173,14 @@ void enrollUser(user users[], Adafruit_Fingerprint finger) {
   String temp;
   while(1){
     Serial.println("Enter password");
-    waitAndGetInput(0, &input, &numInput);
+    waitAndGetInput(0, &input, &numInput, &exit);
     if (exit) {
       discardUser(users, ID);
       return;
     }
     temp = input;
     Serial.println("Enter password again");
-    waitAndGetInput(0, &input, &numInput);
+    waitAndGetInput(0, &input, &numInput, &exit);
     if (exit) {
       discardUser(users, ID);
       return;
@@ -147,6 +227,7 @@ void printTasks(String codes[], int numCodes) {
   for (int i = 0; i < numCodes; i++) {
     Serial.print(codes[i] + " ");
   }
+  Serial.println("");
 }
 
 void waitAndGetInput(uint8_t number, String *input, uint8_t *numInput, uint8_t *exit) {
@@ -156,13 +237,13 @@ void waitAndGetInput(uint8_t number, String *input, uint8_t *numInput, uint8_t *
     if (Serial.available()){
       if (!number){
       *input = Serial.readString();
-      if (*input == "exit") exit = 1;
-      else exit = 0;
+      if (*input == "exit") *exit = 1;
+      else *exit = 0;
       }
       else{
       *numInput = Serial.parseInt();
-      if (*numInput == 255) exit = 1;
-      else exit = 0;
+      if (*numInput == 255) *exit = 1;
+      else *exit = 0;
       }
       break;
     }
@@ -211,7 +292,7 @@ int enrollFingerprint(Adafruit_Fingerprint finger, uint8_t id){ // returns p (st
       Serial.println("Image taken");
       break;
     case FINGERPRINT_NOFINGER:
-      Serial.println(".");
+      Serial.print(".");
       break;
     case FINGERPRINT_PACKETRECIEVEERR:
       Serial.println("Communication error");
@@ -263,7 +344,7 @@ int enrollFingerprint(Adafruit_Fingerprint finger, uint8_t id){ // returns p (st
       Serial.println("Image taken");
       break;
     case FINGERPRINT_NOFINGER:
-      Serial.println(".");
+      Serial.print(".");
       break;
     case FINGERPRINT_PACKETRECIEVEERR:
       Serial.println("Communication error");
